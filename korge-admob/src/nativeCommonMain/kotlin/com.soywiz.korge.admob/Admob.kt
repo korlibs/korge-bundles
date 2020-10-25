@@ -1,5 +1,5 @@
 package com.soywiz.korge.admob
 
-import com.soywiz.korge.view.Views
+import com.soywiz.korge.view.*
 
-actual suspend fun AdmobCreate(views: Views, testing: Boolean): Admob = object : Admob(views) { }
+actual suspend fun AdmobCreate(views: Views, testing: Boolean): Admob = AdmobCreateDefault(views, testing)
