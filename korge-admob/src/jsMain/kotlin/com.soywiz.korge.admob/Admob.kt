@@ -12,67 +12,55 @@ import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
 
 actual suspend fun AdmobCreate(views: Views, testing: Boolean): Admob {
-	val admob: AdmobJs = globalDynamic.admob ?: return object : Admob(views) {}
+	val admob: AdmobJs = globalDynamic.admob ?: return AdmobCreateDefault(views, testing)
+	return CreatedAdmobJs(admob, views, testing)
+}
+
+class CreatedAdmobJs(val admob: AdmobJs, views: Views, val testing: Boolean) : Admob(views) {
 	val admobBanner = admob.banner
 	val admobInterstitial = admob.interstitial
 	val admobRewardvideo = admob.rewardvideo
 
-	return object : Admob(views) {
-		override suspend fun available() = true
+	override suspend fun available() = true
 
-		override suspend fun bannerPrepare(config: Config) {
-			@Suppress("unused")
-			admobBanner.config(config.convert())
-			admobBanner.prepare().awaitDebug("admobBanner.prepare()")
-		}
+	override suspend fun bannerPrepare(config: Admob.Config) {
+		@Suppress("unused")
+		admobBanner.config(config.convert())
+		admobBanner.prepare().awaitDebug("admobBanner.prepare()")
+	}
 
-		override suspend fun bannerShow(): Unit {
-			admobBanner.show().awaitDebug("admobBanner.show()")
-		}
-		override suspend fun bannerHide(): Unit {
-			admobBanner.hide().awaitDebug("admobBanner.hide()")
-		}
+	override suspend fun bannerShow(): Unit {
+		admobBanner.show().awaitDebug("admobBanner.show()")
+	}
+	override suspend fun bannerHide(): Unit {
+		admobBanner.hide().awaitDebug("admobBanner.hide()")
+	}
 
-		fun Config.convert(): dynamic {
-			val config = this
-			return jsObject(*LinkedHashMap<String, Any?>().apply {
-				this["id"] = config.id
-				this["isTesting"] = testing
-				this["autoShow"] = false
-				if (config.forChild != null) this["forChild"] = config.forChild
-				this["overlap"] = config.overlap
-				this["bannerAtTop"] = config.bannerAtTop
-				this["offsetTopBar"] = config.offsetTopBar
-				this["size"] = config.size.name
-			}.entries.map { it.key to it.value }.toTypedArray())
-		}
+	override suspend fun interstitialPrepare(config: Admob.Config) {
+		admobInterstitial.config(config.convert())
+		admobInterstitial.prepare().awaitDebug("admobInterstitial.prepare()")
+	}
 
-		override suspend fun interstitialPrepare(config: Config) {
-			admobInterstitial.config(config.convert())
-			admobInterstitial.prepare().awaitDebug("admobInterstitial.prepare()")
-		}
+	override suspend fun interstitialIsLoaded(): Boolean {
+		return admobInterstitial.isReady().awaitDebug("admobInterstitial.isReady()")
+	}
 
-		override suspend fun interstitialIsLoaded(): Boolean {
-			return admobInterstitial.isReady().awaitDebug("admobInterstitial.isReady()")
-		}
+	override suspend fun interstitialShowAndWait(): Unit {
+		admobInterstitial.show().awaitDebug("admobInterstitial.show()")
+	}
 
-		override suspend fun interstitialShowAndWait(): Unit {
-			admobInterstitial.show().awaitDebug("admobInterstitial.show()")
-		}
+	/////////////////
 
-		/////////////////
+	override suspend fun rewardvideolPrepare(config: Admob.Config) {
+		admobRewardvideo.config(config.convert())
+		admobRewardvideo.prepare().awaitDebug("admobRewardvideo.prepare()")
+	}
 
-		override suspend fun rewardvideolPrepare(config: Config) {
-			admobRewardvideo.config(config.convert())
-			admobRewardvideo.prepare().awaitDebug("admobRewardvideo.prepare()")
-		}
-
-		override suspend fun rewardvideolIsLoaded(): Boolean {
-			return admobRewardvideo.isReady().awaitDebug("admobRewardvideo.isReady()")
-		}
-		override suspend fun rewardvideoShowAndWait(): Unit {
-			admobRewardvideo.show().awaitDebug("admobRewardvideo.show")
-		}
+	override suspend fun rewardvideolIsLoaded(): Boolean {
+		return admobRewardvideo.isReady().awaitDebug("admobRewardvideo.isReady()")
+	}
+	override suspend fun rewardvideoShowAndWait(): Unit {
+		admobRewardvideo.show().awaitDebug("admobRewardvideo.show")
 	}
 }
 
@@ -91,8 +79,8 @@ suspend fun <T> Promise<T>.awaitDebug(name: String): T {
 
 public suspend fun <T> Promise<T>.await2(): T = suspendCancellableCoroutine { cont: CancellableContinuation<T> ->
 	this@await2.then(
-		onFulfilled = { cont.resume(it) },
-		onRejected = { cont.resumeWithException(RuntimeException("$it")) })
+			onFulfilled = { cont.resume(it) },
+			onRejected = { cont.resumeWithException(RuntimeException("$it")) })
 }
 
 
@@ -126,4 +114,18 @@ external interface AdmobJsInterstitialOrVideo {
 	fun show(): Promise<String>
 	fun hide(): Promise<String>
 	fun isReady(): Promise<Boolean>
+}
+
+private fun Admob.Config.convert(): dynamic {
+	val config = this
+	return jsObject(*LinkedHashMap<String, Any?>().apply {
+		this["id"] = config.id
+		this["isTesting"] = testing
+		this["autoShow"] = false
+		if (config.forChild != null) this["forChild"] = config.forChild
+		this["overlap"] = config.overlap
+		this["bannerAtTop"] = config.bannerAtTop
+		this["offsetTopBar"] = config.offsetTopBar
+		this["size"] = config.size.name
+	}.entries.map { it.key to it.value }.toTypedArray())
 }
