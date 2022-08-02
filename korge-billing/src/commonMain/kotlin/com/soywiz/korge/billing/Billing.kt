@@ -4,6 +4,7 @@ import com.soywiz.kds.Extra
 import com.soywiz.kds.linkedHashMapOf
 import com.soywiz.korge.service.ServiceBaseId
 import com.soywiz.korge.view.Views
+import com.soywiz.korgw.*
 import com.soywiz.korio.async.Signal
 import kotlinx.coroutines.flow.*
 
@@ -14,7 +15,7 @@ abstract class InAppPurchases(val views: Views) {
     }
     open suspend fun purchase(product: ProductInfo) {
         println("WARNING: Not implemented InAppPurchases.purchase($product)")
-        if (views.confirm("Perform fake purchase?")) {
+        if (views.gameWindow.confirm("Perform fake purchase?")) {
             onPurchases(listOf(PurchaseInfo(productId = product.id)))
         }
     }
